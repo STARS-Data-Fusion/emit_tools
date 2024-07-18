@@ -3,7 +3,7 @@ import xarray as xr
 
 from .constants import *
 from .extract_GLT import extract_GLT
-from .apply_GLT import apply_GLT
+from .apply_geometry_lookup_table import apply_GLT
 from .get_pixel_center_coords import get_pixel_center_coords
 
 def ortho_xr(swath_ds: xr.Dataset, GLT_nodata_value: int = GLT_NODATA_VALUE, fill_value: int = FILL_VALUE) -> xr.Dataset:

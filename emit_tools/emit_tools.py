@@ -14,7 +14,7 @@ TO DO:
 from .constants import *
 from .load_EMIT_swath import load_EMIT_swath
 from .extract_GLT import extract_GLT
-from .apply_GLT import apply_GLT
+from .apply_geometry_lookup_table import apply_GLT
 from .ortho_xr import ortho_xr
 from .get_pixel_center_coords import get_pixel_center_coords
 from .quality_mask import quality_mask
