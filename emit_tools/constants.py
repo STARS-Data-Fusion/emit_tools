@@ -1,1 +1,3 @@
 ENGINE = "netcdf4"
+GLT_NODATA_VALUE = 0
+FILL_VALUE = -9999
