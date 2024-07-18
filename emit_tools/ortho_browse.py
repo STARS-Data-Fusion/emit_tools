@@ -3,7 +3,7 @@ import xarray as xr
 
 from skimage import io
 
-from .apply_GLT import apply_GLT
+from .apply_geometry_lookup_table import apply_GLT
 
 def ortho_browse(url, glt, spatial_ref, geotransform, white_background=True):
     """
