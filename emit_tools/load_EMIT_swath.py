@@ -19,7 +19,7 @@ from os.path import join, expanduser
 from .constants import *
 from .ortho_xr import ortho_xr
 
-def emit_xarray(filepath: str, ortho: bool = False, qmask=None, unpacked_bmask=None, engine: str = ENGINE):
+def load_EMIT_swath(filepath: str, qmask=None, unpacked_bmask=None, engine: str = ENGINE) -> xr.Dataset:
     """
     This function utilizes other functions in this module to streamline opening an EMIT dataset as an xarray.Dataset.
 
@@ -88,9 +88,7 @@ def emit_xarray(filepath: str, ortho: bool = False, qmask=None, unpacked_bmask=N
     out_xr = xr.Dataset(data_vars=data_vars, coords=coords, attrs=ds.attrs)
     out_xr.attrs["granule_id"] = granule_id
 
-    if band := product_band_map.get(
-        next((k for k in product_band_map.keys() if k in granule_id), "unknown"), None
-    ):
+    if band := product_band_map.get(next((k for k in product_band_map.keys() if k in granule_id), "unknown"), None):
         if "minerals" in list(out_xr.dims):
             out_xr = out_xr.swap_dims({"minerals": band})
             out_xr = out_xr.rename({band: "mineral_name"})
@@ -103,9 +101,5 @@ def emit_xarray(filepath: str, ortho: bool = False, qmask=None, unpacked_bmask=N
             out_xr[var].data[qmask == 1] = -9999
         if unpacked_bmask is not None:
             out_xr[var].data[unpacked_bmask == 1] = -9999
-
-    if ortho is True:
-        out_xr = ortho_xr(out_xr)
-        out_xr.attrs["Orthorectified"] = "True"
 
     return out_xr

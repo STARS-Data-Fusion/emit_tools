@@ -1,30 +1,28 @@
 import numpy as np
 import xarray as xr
 
-from .apply_glt import apply_glt
+from .constants import *
+from .extract_GLT import extract_GLT
+from .apply_geometry_lookup_table import apply_GLT
 from .get_pixel_center_coords import get_pixel_center_coords
 
-def ortho_xr(ds: xr.Dataset, GLT_NODATA_VALUE=0, fill_value=-9999):
+def ortho_xr(swath_ds: xr.Dataset, GLT_nodata_value: int = GLT_NODATA_VALUE, fill_value: int = FILL_VALUE) -> xr.Dataset:
     """
-    This function uses `apply_glt` to create an orthorectified xarray dataset.
+    This function uses `apply_GLT` to create an orthorectified xarray dataset.
 
     Parameters:
-    ds: an xarray dataset produced by emit_xarray
-    GLT_NODATA_VALUE: no data value for the GLT tables, 0 by default
+    swath_ds: an xarray dataset produced by emit_xarray
+    GLT_nodata_value: no data value for the GLT tables, 0 by default
     fill_value: the fill value for EMIT datasets, -9999 by default
 
     Returns:
     ortho_ds: an orthocorrected xarray dataset.
-
     """
-    # Build glt_ds
-
-    glt_ds = np.nan_to_num(
-        np.stack([ds["glt_x"].data, ds["glt_y"].data], axis=-1), nan=GLT_NODATA_VALUE
-    ).astype(int)
+    # extract GLT
+    GLT_array = extract_GLT(swath_ds)
 
     # List Variables
-    var_list = list(ds.data_vars)
+    var_list = list(swath_ds.data_vars)
 
     # Remove flat field from data vars - the flat field is only useful with additional information before orthorectification
     if "flat_field_update" in var_list:
@@ -35,36 +33,35 @@ def ortho_xr(ds: xr.Dataset, GLT_NODATA_VALUE=0, fill_value=-9999):
 
     # Extract Rawspace Dataset Variable Values (Typically Reflectance)
     for var in var_list:
-        raw_ds = ds[var].data
-        var_dims = ds[var].dims
+        swath_array = swath_ds[var].data
+        swath_dimensions = swath_ds[var].dims
+
         # Apply GLT to dataset
-        out_ds = apply_glt(raw_ds, glt_ds, GLT_NODATA_VALUE=GLT_NODATA_VALUE)
+        out_ds = apply_GLT(swath_array, GLT_array, GLT_nodata_value=GLT_nodata_value)
 
         # Update variables - Only works for 2 or 3 dimensional arays
-        if raw_ds.ndim == 2:
+        if swath_array.ndim == 2:
             out_ds = out_ds.squeeze()
             data_vars[var] = (["latitude", "longitude"], out_ds)
         else:
-            data_vars[var] = (["latitude", "longitude", var_dims[-1]], out_ds)
+            data_vars[var] = (["latitude", "longitude", swath_dimensions[-1]], out_ds)
 
-        del raw_ds
+        del swath_array
 
     # Calculate Lat and Lon Vectors
-    lon, lat = get_pixel_center_coords(
-        ds
-    )  # Reorder this function to make sense in case of multiple variables
+    lon, lat = get_pixel_center_coords(swath_ds)  # Reorder this function to make sense in case of multiple variables
 
     # Apply GLT to elevation
-    elev_ds = apply_glt(ds["elev"].data, glt_ds)
+    elev_ds = apply_GLT(swath_ds["elev"].data, GLT_array)
 
     # Delete glt_ds - no longer needed
-    del glt_ds
+    del GLT_array
 
     # Create Coordinate Dictionary
     coords = {
         "latitude": (["latitude"], lat),
         "longitude": (["longitude"], lon),
-        **ds.coords,
+        **swath_ds.coords,
     }  # unpack to add appropriate coordinates
 
     # Remove Unnecessary Coords
@@ -75,17 +72,19 @@ def ortho_xr(ds: xr.Dataset, GLT_NODATA_VALUE=0, fill_value=-9999):
     coords["elev"] = (["latitude", "longitude"], np.squeeze(elev_ds))
 
     # Build Output xarray Dataset and assign data_vars array attributes
-    out_xr = xr.Dataset(data_vars=data_vars, coords=coords, attrs=ds.attrs)
+    ortho_ds = xr.Dataset(data_vars=data_vars, coords=coords, attrs=swath_ds.attrs)
 
     del out_ds
+
     # Assign Attributes from Original Datasets
     for var in var_list:
-        out_xr[var].attrs = ds[var].attrs
-    out_xr.coords["latitude"].attrs = ds["lat"].attrs
-    out_xr.coords["longitude"].attrs = ds["lon"].attrs
-    out_xr.coords["elev"].attrs = ds["elev"].attrs
+        ortho_ds[var].attrs = swath_ds[var].attrs
+
+    ortho_ds.coords["latitude"].attrs = swath_ds["lat"].attrs
+    ortho_ds.coords["longitude"].attrs = swath_ds["lon"].attrs
+    ortho_ds.coords["elev"].attrs = swath_ds["elev"].attrs
 
     # Add Spatial Reference in recognizable format
-    out_xr.rio.write_crs(ds.spatial_ref, inplace=True)
+    ortho_ds.rio.write_crs(swath_ds.spatial_ref, inplace=True)
 
-    return out_xr
+    return ortho_ds
