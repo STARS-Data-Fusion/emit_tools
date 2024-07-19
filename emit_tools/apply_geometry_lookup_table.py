@@ -15,8 +15,9 @@ def apply_GLT(
     - swath_array (np.ndarray): The input satellite data array to be orthorectified. 
                                 Can be 2D (single band) or 3D (multiple bands).
     - GLT_array (np.ndarray): The Geometry Lookup Table array, which maps the input array's 
-                              pixels to geographic locations. Must be 2D or 3D, with the last 
-                              dimension being 2, representing (row, column) indices.
+                              pixels to geographic locations. It is a 3-dimensional array in the 
+                              shape of (latitude, longitude, 2), with the last dimension 
+                              representing (row, column) indices.
     - fill_value (int, optional): The value used to fill the output array wherever the GLT 
                                   does not provide a mapping. Defaults to FILL_VALUE from constants.
     - GLT_nodata_value (int, optional): The value in the GLT_array that indicates no data or 
@@ -25,13 +26,13 @@ def apply_GLT(
                                         GLT_NODATA_VALUE from constants.
 
     Returns:
-    np.ndarray: A numpy array of the same number of dimensions as `swath_array`, containing the 
-                orthorectified data. The shape of the output array is determined by the dimensions 
-                of the GLT_array and the number of bands in `swath_array`.
+    - np.ndarray: A numpy array of the same number of dimensions as `swath_array`, containing the 
+                  orthorectified data. The shape of the output array is determined by the dimensions 
+                  of the GLT_array and the number of bands in `swath_array`.
 
     Raises:
-    ValueError: If the dimensions of the input arrays are not compatible or if the GLT_array does 
-                not have the last dimension of size 2.
+    - ValueError: If the dimensions of the input arrays are not compatible or if the GLT_array does 
+                  not have the last dimension of size 2.
     """
 
     # Ensure GLT_array has the correct shape
