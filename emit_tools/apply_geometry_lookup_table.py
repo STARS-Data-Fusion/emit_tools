@@ -2,46 +2,57 @@ import numpy as np
 
 from .constants import *
 
-# Function to Apply the GLT to an array
 def apply_GLT(swath_array: np.ndarray, GLT_array: np.ndarray, fill_value: int = FILL_VALUE, GLT_nodata_value: int = GLT_NODATA_VALUE) -> np.ndarray:
     """
-    This function applies the GLT array to a numpy array of either 2 or 3 dimensions.
+    Applies a Geometry Lookup Table (GLT) to a numpy array representing satellite data, 
+    to orthorectify it based on the GLT. This function supports input arrays of 2 or 3 dimensions.
 
     Parameters:
-    ds_array: numpy array of the desired variable
-    glt_array: a GLT array constructed from EMIT GLT data
+    - swath_array (np.ndarray): The input satellite data array to be orthorectified. 
+                                Can be 2D (single band) or 3D (multiple bands).
+    - GLT_array (np.ndarray): The Geometry Lookup Table array, which maps the input array's 
+                              pixels to geographic locations. Must be 2D or 3D, with the last 
+                              dimension being 2, representing (row, column) indices.
+    - fill_value (int, optional): The value used to fill the output array wherever the GLT 
+                                  does not provide a mapping. Defaults to FILL_VALUE from constants.
+    - GLT_nodata_value (int, optional): The value in the GLT_array that indicates no data or 
+                                        invalid mapping. Pixels with this value in the GLT are 
+                                        filled with `fill_value` in the output array. Defaults to 
+                                        GLT_NODATA_VALUE from constants.
 
     Returns:
-    out_ds: a numpy array of orthorectified data.
+    np.ndarray: A numpy array of the same number of dimensions as `swath_array`, containing the 
+                orthorectified data. The shape of the output array is determined by the dimensions 
+                of the GLT_array and the number of bands in `swath_array`.
+
+    Raises:
+    ValueError: If the dimensions of the input arrays are not compatible or if the GLT_array does 
+                not have the last dimension of size 2.
     """
 
-    # Build Output Dataset
+    # Ensure GLT_array has the correct shape
+    if GLT_array.ndim not in [2, 3] or (GLT_array.ndim == 3 and GLT_array.shape[-1] != 2):
+        raise ValueError("GLT_array must be 2D or 3D with the last dimension of size 2.")
+
+    # Adjust swath_array dimensions if necessary
     if swath_array.ndim == 2:
         swath_array = swath_array[:, :, np.newaxis]
 
-    # get the length of the latitude dimension from the first dimension of the geometry lookup table array
-    latitude_length = GLT_array.shape[0]
-    # get the length of the longitude dimension from the second dimension of the geometry lookup table array
-    longitude_length = GLT_array.shape[1]
-    # get the length of the band dimension from the last dimension of the swath array
+    # Extract dimensions for the output array
+    latitude_length, longitude_length = GLT_array.shape[:2]
     band_length = swath_array.shape[-1]
-    # collect the shape of the orthorectified array
     ortho_array_shape = (latitude_length, longitude_length, band_length)
 
-    # create an empty orthorectified array filled with the fill value
-    ortho_array = np.full(
-        ortho_array_shape,
-        fill_value,
-        dtype=np.float32,
-    )
+    # Initialize the output array
+    ortho_array = np.full(ortho_array_shape, fill_value, dtype=np.float32)
 
-    # mask of where valid gometry lookup table values are
+    # Identify valid GLT entries
     valid_GLT = np.all(GLT_array != GLT_nodata_value, axis=-1)
 
-    # convert geometry lookup table indices to zero-based indices for numpy
-    zero_based_indices = GLT_array - 1  
+    # Adjust GLT indices to zero-based
+    zero_based_indices = GLT_array - 1
 
-    # sample the swath array at the zero-based indices and assign to the orthorectified array
+    # Apply GLT to swath_array
     ortho_array[valid_GLT, :] = swath_array[zero_based_indices[valid_GLT, 1], zero_based_indices[valid_GLT, 0], :]
 
     return ortho_array
