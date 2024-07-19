@@ -2,7 +2,11 @@ import numpy as np
 
 from .constants import *
 
-def apply_GLT(swath_array: np.ndarray, GLT_array: np.ndarray, fill_value: int = FILL_VALUE, GLT_nodata_value: int = GLT_NODATA_VALUE) -> np.ndarray:
+def apply_GLT(
+        swath_array: np.ndarray, 
+        GLT_array: np.ndarray, 
+        fill_value: int = FILL_VALUE, 
+        GLT_nodata_value: int = GLT_NODATA_VALUE) -> np.ndarray:
     """
     Applies a Geometry Lookup Table (GLT) to a numpy array representing satellite data, 
     to orthorectify it based on the GLT. This function supports input arrays of 2 or 3 dimensions.
