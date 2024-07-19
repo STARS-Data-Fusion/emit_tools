@@ -1,0 +1,14 @@
+numpy<2
+xarray
+gdal
+geopandas
+jupyter
+netCDF4
+spectral
+scikit-image
+pandas
+rasterio
+rioxarray
+s3fs
+fsspec
+rasters
