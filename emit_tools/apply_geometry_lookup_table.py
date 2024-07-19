@@ -3,7 +3,7 @@ import numpy as np
 from .constants import *
 
 # Function to Apply the GLT to an array
-def apply_GLT(swath_array: np.ndarray, GLT_array: np.ndarray, fill_value: int = FILL_VALUE, GLT_nodata_value: int = GLT_NODATA_VALUE):
+def apply_GLT(swath_array: np.ndarray, GLT_array: np.ndarray, fill_value: int = FILL_VALUE, GLT_nodata_value: int = GLT_NODATA_VALUE) -> np.ndarray:
     """
     This function applies the GLT array to a numpy array of either 2 or 3 dimensions.
 
@@ -18,7 +18,8 @@ def apply_GLT(swath_array: np.ndarray, GLT_array: np.ndarray, fill_value: int = 
     # Build Output Dataset
     if swath_array.ndim == 2:
         swath_array = swath_array[:, :, np.newaxis]
-    out_ds = np.full(
+
+    ortho_array = np.full(
         (GLT_array.shape[0], GLT_array.shape[1], swath_array.shape[-1]),
         fill_value,
         dtype=np.float32,
@@ -29,8 +30,8 @@ def apply_GLT(swath_array: np.ndarray, GLT_array: np.ndarray, fill_value: int = 
     # Adjust for One based Index - make a copy to prevent decrementing multiple times inside ortho_xr when applying the glt to elev
     glt_array_copy = GLT_array.copy()
     glt_array_copy[valid_GLT] -= 1
-    out_ds[valid_GLT, :] = swath_array[
+    ortho_array[valid_GLT, :] = swath_array[
         glt_array_copy[valid_GLT, 1], glt_array_copy[valid_GLT, 0], :
     ]
 
-    return out_ds
+    return ortho_array
