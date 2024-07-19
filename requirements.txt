@@ -2,6 +2,7 @@ numpy<2
 xarray
 gdal
 geopandas
+h5py
 jupyter
 netCDF4
 spectral
