@@ -19,12 +19,6 @@ def apply_GLT(swath_array: np.ndarray, GLT_array: np.ndarray, fill_value: int = 
     if swath_array.ndim == 2:
         swath_array = swath_array[:, :, np.newaxis]
 
-    # ortho_array = np.full(
-    #     (GLT_array.shape[0], GLT_array.shape[1], swath_array.shape[-1]),
-    #     fill_value,
-    #     dtype=np.float32,
-    # )
-
     # get the length of the latitude dimension from the first dimension of the geometry lookup table array
     latitude_length = GLT_array.shape[0]
     # get the length of the longitude dimension from the second dimension of the geometry lookup table array
